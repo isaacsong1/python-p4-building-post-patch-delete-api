@@ -67,42 +67,22 @@ def reviews():
 
         return response
     elif request.method == 'POST':
-        # try:
-        #     new_review = Review(
-        #         score=request.form.get('score'),
-        #         comment=request.form.get('comment'),
-        #         game_id=request.form.get('game_id'),
-        #         user_id=request.form.get('user_id')
-        #     )
+        try:
+            data = request.get_json()
+            new_review = Review(**data)
+            db.session.add(new_review)
+            db.session.commit()
 
-        #     db.session.add(new_review)
-        #     db.session.commit()
-        #     response = make_response(review_dict, 201)
+            review_dict = new_review.to_dict()
 
-        #     return response
-        # except Exception as e:
-        #     db.session.rollback()
-        #     return {'error': 'Unable to create new review'}
-        new_review = Review(
-            score=request.form.get("score"),
-            comment=request.form.get("comment"),
-            game_id=request.form.get("game_id"),
-            user_id=request.form.get("user_id"),
-        )
+            response = make_response(review_dict, 201)
 
-        db.session.add(new_review)
-        db.session.commit()
+            return response
+        except Exception as e:
+            db.session.rollback()
+            return {'error': 'Unable to create new review'}
 
-        review_dict = new_review.to_dict()
-
-        response = make_response(
-            review_dict,
-            201
-        )
-
-        return response
-
-@app.route('/reviews/<int:id>', methods=['GET', 'DELETE'])
+@app.route('/reviews/<int:id>', methods=['GET', 'PATCH', 'DELETE'])
 def review_by_id(id):
     review = Review.query.filter(Review.id == id).first()
 
@@ -110,6 +90,21 @@ def review_by_id(id):
         review_dict = review.to_dict()
 
         response = make_response(review_dict, 200)
+
+        return response
+    
+    elif request.method == 'PATCH':
+        for key, value in request.get_json().items():
+            setattr(review, key, value)
+        db.session.add(review)
+        db.session.commit()
+
+        review_dict = review.to_dict()
+
+        response = make_response(
+            review_dict,
+            200
+        )
 
         return response
     
